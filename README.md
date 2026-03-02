@@ -1,50 +1,207 @@
+# Bandit Level 7 → Level 8 | OverTheWire Write-Up
 
-# Facts | Hack The Box Writeup
-> A comprehensive technical report for the "Facts" machine on the Hack The Box platform.
-# Bandit Level 6 → Level 7 | OverTheWire Writeup
-> A detailed technical walkthrough for identifying a specific file based on system ownership and metadata properties.
+> A practical exploration of efficient text filtering, Linux pipelines, and command-line data extraction.
 
-**Date:** March 1, 2026
-**Author:** [Your Name]
-**Platform:** OverTheWire
-**Challenge:** Bandit Level 6
-**Categories:** Linux / File System
-**Rating:** 2/10
-**Difficulty:** Easy
-**Solving Time:** ~10 Minutes
+**Date:** 1 March 2026  
+**Platform:** OverTheWire  
+**Challenge:** Bandit Level 7  
+**Category:** Linux / Text Processing  
+**Difficulty:** Easy (3/10)  
+**Estimated Solving Time:** ~5 minutes  
 
 ---
 
 ## Table of Contents
 - [Overview](#overview)
-- [Challenge](#challenge)
-- [Walkthrough](#walkthrough)
+- [Challenge Description](#challenge-description)
+- [Environment Setup](#environment-setup)
+- [Step-by-Step Walkthrough](#step-by-step-walkthrough)
+- [Command Breakdown & Functional Analysis](#command-breakdown--functional-analysis)
+- [Optimised Alternative Approach](#optimised-alternative-approach)
+- [Final Password](#final-password)
+- [Key Takeaways](#key-takeaways)
 
 ---
 
 ## Overview
-This level focuses on advanced file system navigation and the use of the `find` command to filter objects based on specific administrative attributes. Unlike previous levels where the target was within a local directory, the password is hidden "somewhere on the server," requiring a global search across the root directory.
 
-## Challenge
-The objective is to retrieve the password for **Bandit7**, which is stored in a file with the following unique properties:
-* **User Owner:** `bandit7`
-* **Group Owner:** `bandit6`
-* **File Size:** `33 bytes`
+In cybersecurity engineering, the ability to extract specific information from large datasets is essential. Whether analysing server logs (e.g. Apache or Nginx), reviewing application output, or searching for exposed credentials, text-processing tools are indispensable.
 
-### Available Tools
-* `find`: To search for the file using filters.
-* `ls`: To verify file attributes.
-* `cat`: To read the password once the file is located.
+This level of Bandit simulates a realistic scenario:
+
+> A specific piece of information (the password) is hidden within a large file, and only a keyword clue is provided.
+
+To solve it efficiently, we rely on standard Linux command-line utilities, particularly `grep`, combined with shell pipelines.
 
 ---
 
-## Walkthrough
+## Challenge Description
 
-### 1. Environment Analysis
-Upon logging in as `bandit6`, we observe that the home directory does not contain the target file. The challenge description implies the file exists outside the user's immediate scope, necessitating a search starting from the root directory `/`.
+The goal is to retrieve the password for **Bandit Level 8**.
 
-### 2. Executing the Search
-To find a file matching all three specific criteria, we use the `find` command. To avoid being overwhelmed by "Permission Denied" errors from system folders we cannot access, we redirect the standard error (`stderr`) to `/dev/null`.
+### Provided Information
+
+- The password is stored in a file named `data.txt`
+- The password is located **on the same line as the word `"millionth"`**
+- The file is large enough that manual inspection is impractical
+
+### Technical Details
+
+- **Source File:** `~/data.txt`
+- **Search Keyword:** `millionth`
+- **Expected Output:** 32-character alphanumeric password string
+
+---
+
+## Environment Setup
+
+### 1. Establish SSH Connection
+
+We begin by connecting to the Bandit server using SSH:
 
 ```bash
-find / -user bandit7 -group bandit6 -size 33c 2>/dev/null
+ssh bandit7@bandit.labs.overthewire.org -p 2220
+```
+
+After entering the password from Level 6, we gain access to the remote environment.
+
+---
+
+### 2. Verify File Presence and Size
+
+Before attempting extraction, it is good practice to confirm the file exists and inspect its size:
+
+```bash
+ls -lh data.txt
+```
+
+The `-lh` flags mean:
+
+- `-l` → long listing format  
+- `-h` → human-readable file size  
+
+The output confirms that `data.txt` is relatively large, making manual inspection inefficient and unnecessary.
+
+---
+
+## Step-by-Step Walkthrough
+
+### Step 1 — Understanding the Objective
+
+We know:
+- The password appears next to the word `millionth`
+- The file is too large to inspect manually
+- We need a filtering approach
+
+This makes `grep` the ideal tool.
+
+---
+
+### Step 2 — Filtering the File with `grep`
+
+We execute:
+
+```bash
+cat data.txt | grep "millionth"
+```
+
+### Command Execution
+
+```bash
+bandit7@bandit:~$ cat data.txt | grep "millionth"
+```
+
+### Output
+
+```
+millionth   dfwvzFQi4mU0wfNbFOe9RoWskMLg7eEc
+```
+
+The password is the alphanumeric string following the keyword.
+
+---
+
+## Command Breakdown & Functional Analysis
+
+To understand why this works, let us examine each component.
+
+---
+
+### `cat data.txt`
+
+**Purpose:**  
+Displays the contents of a file.
+
+**Role in this context:**  
+Acts as the data source, sending the file's entire contents to standard output (stdout).
+
+---
+
+### `|` (Pipe Operator)
+
+**Purpose:**  
+Connects two commands.
+
+**How it works:**  
+The pipe redirects the standard output (stdout) of the command on the left to the standard input (stdin) of the command on the right.
+
+This allows commands to work together in a data-processing chain.
+
+---
+
+### `grep "millionth"`
+
+**Meaning:**  
+Global Regular Expression Print.
+
+**Function:**  
+Searches input line by line for a pattern match.
+
+**Role here:**  
+Filters the incoming data stream and prints only the line containing the word `"millionth"`.
+
+---
+
+## Optimised Alternative Approach
+
+Although the pipeline works perfectly, it is not strictly necessary to use `cat` here. A more efficient command is:
+
+```bash
+grep "millionth" data.txt
+```
+
+This avoids spawning an additional process and directly instructs `grep` to read from the file.
+
+Both approaches produce identical output, but the second is considered cleaner and more efficient in Unix philosophy.
+
+---
+
+## Final Password
+
+The password for **Bandit Level 8** is:
+
+```
+dfwvzFQi4mU0wfNbFOe9RoWskMLg7eEc
+```
+
+---
+
+## Key Takeaways
+
+- Efficient text filtering is a fundamental cybersecurity skill.
+- `grep` is one of the most powerful and commonly used tools in Linux environments.
+- Understanding pipelines (`|`) enables modular and readable command chaining.
+- Avoid unnecessary use of `cat` when a command can read directly from a file.
+- Even simple challenges reinforce essential real-world command-line techniques.
+
+---
+
+### Closing Thoughts
+
+While this level is relatively straightforward, it reinforces an important mindset:
+
+> Never process data manually when automation can do it faster, cleaner, and more reliably.
+
+Mastery of small utilities like `grep`, `awk`, and `sed` forms the backbone of efficient system analysis and security operations.
+
+Onwards to Level 8.
